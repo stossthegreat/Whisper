@@ -127,8 +127,11 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
 
     final monthlyLabel = _products['monthly']?.price ?? '\$9.99';
     final yearlyLabel = _products['yearly']?.price ?? '\$90.00';
-    final monthlyCard = _planCard('monthly', '$monthlyLabel/mo', 'Cancel anytime');
-    final yearlyCard = _planCard('yearly', '$yearlyLabel/year', '2 months free');
+    // If Google Play returns formatted price for a specific offer, prefer that
+    final String monthlyTag = 'Cancel anytime';
+    final String yearlyTag = '2 months free';
+    final monthlyCard = _planCard('monthly', '$monthlyLabel/mo', monthlyTag);
+    final yearlyCard = _planCard('yearly', '$yearlyLabel/year', yearlyTag);
 
     if (isNarrow) {
       return Column(
