@@ -78,7 +78,8 @@ class BillingService {
 
     // Subscriptions on Google Play require an offerToken. Pick the first available offer.
     if (Platform.isAndroid && product is GooglePlayProductDetails) {
-      final offers = product.billingClientProduct.subscriptionOfferDetails;
+      // Use the new API surface from in_app_purchase_android 0.4.x
+      final offers = product.productDetails.subscriptionOfferDetails;
 
       // Select an offer matching the intended billing period if possible
       // (e.g., basePlanId or offerTags containing "month"/"year").
@@ -100,7 +101,7 @@ class BillingService {
         selectedOffer ??= offers.first;
       }
 
-      final String? offerToken = selectedOffer?.offerToken;
+      final String? offerToken = selectedOffer?.offerIdToken ?? product.offerToken;
       if (offerToken == null || offerToken.isEmpty) {
         _pendingPurchaseCompleter = null;
         return false; // No valid offer available
@@ -110,7 +111,6 @@ class BillingService {
         productDetails: product,
         changeSubscriptionParam: null,
         applicationUserName: null,
-        productDetailsToken: null,
         offerToken: offerToken,
       );
 
@@ -149,20 +149,27 @@ class BillingService {
 
   static Future<bool> restorePurchases() async {
     try {
-      final QueryPurchaseDetailsResponse resp =
-          await _inAppPurchase.queryPastPurchases();
-      bool anyActive = false;
-      for (final PurchaseDetails p in resp.pastPurchases) {
-        if (p.status == PurchaseStatus.purchased ||
-            p.status == PurchaseStatus.restored) {
-          anyActive = true;
-          if (p.pendingCompletePurchase) {
-            await _inAppPurchase.completePurchase(p);
+      await _inAppPurchase.restorePurchases();
+      // We'll resolve entitlement based on updates coming through purchaseStream.
+      // Give a short window for updates to arrive.
+      final completer = Completer<bool>();
+      final sub = _inAppPurchase.purchaseStream.listen((purchases) async {
+        bool anyActive = false;
+        for (final PurchaseDetails p in purchases) {
+          if (p.status == PurchaseStatus.purchased ||
+              p.status == PurchaseStatus.restored) {
+            anyActive = true;
+            if (p.pendingCompletePurchase) {
+              await _inAppPurchase.completePurchase(p);
+            }
           }
         }
-      }
-      await PaywallService.setEntitled(anyActive);
-      return anyActive;
+        await PaywallService.setEntitled(anyActive);
+        if (!completer.isCompleted) completer.complete(anyActive);
+      });
+      final result = await completer.future.timeout(const Duration(seconds: 5), onTimeout: () => false);
+      await sub.cancel();
+      return result;
     } catch (_) {
       return false;
     }
