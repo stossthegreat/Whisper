@@ -41,20 +41,28 @@ jobs:
         run: |
           set -e
           mkdir -p android/app
-          echo "Generating keystore with exact same parameters as Sep 15th keystore"
-          keytool -genkeypair -v -storetype JKS \
-            -keystore android/app/upload-keystore.jks \
-            -alias upload -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass pass123 -keypass pass123 \
-            -dname "CN=Beguile Upload, OU=CI, O=BeguileAI, L=, ST=, C=US"
-          echo "KEY_ALIAS=upload" >> $GITHUB_ENV
-          echo "STORE_PASSWORD=pass123" >> $GITHUB_ENV
-          echo "KEY_PASSWORD=pass123" >> $GITHUB_ENV
-          echo "ANDROID_KEYSTORE_PATH=$GITHUB_WORKSPACE/android/app/upload-keystore.jks" >> $GITHUB_ENV
-          ls -l android/app/upload-keystore.jks
-          echo "Keystore generated successfully"
+          KEY_ALIAS=upload
+          STORE_PASSWORD=pass123
+          KEY_PASSWORD=pass123
+          ANDROID_KEYSTORE_PATH=android/app/upload-keystore.jks
+          echo "KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "STORE_PASSWORD=$STORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+          echo "ANDROID_KEYSTORE_PATH=$GITHUB_WORKSPACE/$ANDROID_KEYSTORE_PATH" >> "$GITHUB_ENV"
+          if [ -f "$ANDROID_KEYSTORE_PATH" ] && keytool -list -alias "$KEY_ALIAS" -keystore "$ANDROID_KEYSTORE_PATH" -storepass "$STORE_PASSWORD" >/dev/null 2>&1; then
+            echo "Keystore exists and alias '$KEY_ALIAS' already present — skipping generation"
+          else
+            echo "Generating keystore with exact same parameters as Sep 15th keystore"
+            keytool -genkeypair -v -storetype JKS \
+              -keystore "$ANDROID_KEYSTORE_PATH" \
+              -alias "$KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$STORE_PASSWORD" -keypass "$KEY_PASSWORD" \
+              -dname "CN=Beguile Upload, OU=CI, O=BeguileAI, L=, ST=, C=US"
+            echo "Keystore generated or alias created successfully"
+          fi
+          ls -l "$ANDROID_KEYSTORE_PATH"
           echo "Getting SHA-1 fingerprint:"
-          keytool -list -v -keystore android/app/upload-keystore.jks -alias upload -storepass pass123 -keypass pass123 | grep "SHA1:"
+          keytool -list -v -keystore "$ANDROID_KEYSTORE_PATH" -alias "$KEY_ALIAS" -storepass "$STORE_PASSWORD" -keypass "$KEY_PASSWORD" | grep "SHA1:"
 
       - name: Keystore sanity check
         run: |
