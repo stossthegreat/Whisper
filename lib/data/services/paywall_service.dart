@@ -4,11 +4,13 @@ class PaywallService {
   static const String _entitledKey = 'premium_entitled_v1';
   static const String _inviteCodeKey = 'premium_invite_code_v1';
 
-  // Compile-time bypass (flutter run/build with --dart-define=BYPASS_PAYWALL=true)
-  static const bool bypassPaywall = bool.fromEnvironment('BYPASS_PAYWALL', defaultValue: false);
+  // Compile-time bypass (--dart-define=BYPASS_PAYWALL=true)
+  static const bool bypassPaywall =
+      bool.fromEnvironment('BYPASS_PAYWALL', defaultValue: false);
 
   // Optional comma-separated invite codes (--dart-define=INVITE_CODES=CODE1,CODE2)
-  static const String inviteCodesEnv = String.fromEnvironment('INVITE_CODES', defaultValue: '');
+  static const String inviteCodesEnv =
+      String.fromEnvironment('INVITE_CODES', defaultValue: '');
 
   static Future<bool> isEntitled() async {
     if (bypassPaywall) return true;
@@ -25,7 +27,6 @@ class PaywallService {
     final trimmed = code.trim();
     if (trimmed.isEmpty) return false;
 
-    // Validate against provided list (case-insensitive)
     final allowed = inviteCodesEnv
         .split(',')
         .map((s) => s.trim())
@@ -50,4 +51,4 @@ class PaywallService {
     await prefs.remove(_entitledKey);
     await prefs.remove(_inviteCodeKey);
   }
-} 
+}
