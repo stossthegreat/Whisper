@@ -78,10 +78,9 @@ class BillingService {
 
     // Subscriptions on Google Play require an offerToken. Pick the first available offer.
     if (Platform.isAndroid && product is GooglePlayProductDetails) {
-      final List<SubscriptionOfferDetails>? offers =
-          product.skuDetails.subscriptionOfferDetails;
-      final String? offerToken = (offers != null && offers.isNotEmpty)
-          ? offers.first.offerToken
+      final offerDetails = product.billingClientProduct.subscriptionOfferDetails;
+      final String? offerToken = (offerDetails != null && offerDetails.isNotEmpty)
+          ? offerDetails.first.offerToken
           : null;
 
       final GooglePlayPurchaseParam purchaseParam = GooglePlayPurchaseParam(

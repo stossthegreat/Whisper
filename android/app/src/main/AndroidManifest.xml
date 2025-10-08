@@ -11,12 +11,6 @@
         android:name="${applicationName}"
         android:label="Whisper"
         android:icon="@mipmap/ic_launcher">
-        <!-- Required by Play Billing Library v6+ to verify purchases -->
-        <provider
-            android:name="com.android.billingclient.api.ProxyBillingActivity"
-            android:authorities="${play_billing_provider_authority}"
-            android:exported="false"
-            tools:replace="android:authorities" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
