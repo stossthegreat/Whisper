@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/theme.dart';
 import '../../../widgets/app_header.dart';
 import '../../../data/services/paywall_service.dart';
+import '../../../data/services/billing_service.dart';
 
 final entitlementProvider = FutureProvider<bool>((ref) async {
   return PaywallService.isEntitled();
@@ -20,11 +21,27 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
   String _selectedPlan = 'monthly';
   bool _isProcessing = false;
   final TextEditingController _inviteController = TextEditingController();
+  Map<String, dynamic> _products = const {};
 
   @override
   void dispose() {
     _inviteController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _initBilling();
+  }
+
+  Future<void> _initBilling() async {
+    await BillingService.init();
+    final products = await BillingService.loadProductsByPlan();
+    if (!mounted) return;
+    setState(() {
+      _products = products;
+    });
   }
 
   @override
@@ -49,8 +66,10 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
                   _benefits(),
                   const SizedBox(height: WFDims.spacingL),
                   _inviteUnlock(),
-                  const SizedBox(height: WFDims.spacingXL),
+                const SizedBox(height: WFDims.spacingXL),
                   _cta(entitledAsync),
+                const SizedBox(height: WFDims.spacingS),
+                _restoreButton(),
                   const SizedBox(height: WFDims.spacingXXL),
                 ],
               ),
@@ -106,8 +125,10 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     final width = MediaQuery.of(context).size.width;
     final isNarrow = width < 560;
 
-    final monthlyCard = _planCard('monthly', '\$9.99/mo', 'Cancel anytime');
-    final yearlyCard = _planCard('yearly', '\$90/year', '2 months free');
+    final monthlyLabel = _products['monthly']?.price ?? '\$9.99';
+    final yearlyLabel = _products['yearly']?.price ?? '\$90.00';
+    final monthlyCard = _planCard('monthly', '$monthlyLabel/mo', 'Cancel anytime');
+    final yearlyCard = _planCard('yearly', '$yearlyLabel/year', '2 months free');
 
     if (isNarrow) {
       return Column(
@@ -253,7 +274,28 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        onPressed: (_isProcessing || (!entitled && !PaywallService.bypassPaywall)) ? null : () => context.go('/login'),
+        onPressed: _isProcessing
+            ? null
+            : () async {
+                if (entitled || PaywallService.bypassPaywall) {
+                  context.go('/login');
+                  return;
+                }
+                setState(() => _isProcessing = true);
+                final ok = await BillingService.buyPlan(_selectedPlan);
+                setState(() => _isProcessing = false);
+                if (!mounted) return;
+                if (ok) {
+                  ref.refresh(entitlementProvider);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Subscription activated')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Purchase failed or canceled')),
+                  );
+                }
+              },
         icon: const Icon(Icons.lock_open),
         label: Text(entitled || PaywallService.bypassPaywall ? 'Continue' : 'Subscribe to Continue'),
         style: ElevatedButton.styleFrom(
@@ -279,5 +321,29 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
         const SnackBar(content: Text('Invalid code.')),
       );
     }
+  }
+
+  Widget _restoreButton() {
+    return TextButton(
+      onPressed: _isProcessing
+          ? null
+          : () async {
+              setState(() => _isProcessing = true);
+              final ok = await BillingService.restorePurchases();
+              setState(() => _isProcessing = false);
+              if (!mounted) return;
+              if (ok) {
+                ref.refresh(entitlementProvider);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Purchases restored')),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('No active purchases found')),
+                );
+              }
+            },
+      child: const Text('Restore purchases'),
+    );
   }
 } 

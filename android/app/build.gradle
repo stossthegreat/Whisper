@@ -11,10 +11,12 @@ android {
 
     defaultConfig {
         applicationId "com.beguileai.app"  // MUST match Play package exactly
-        minSdk 24                          // Changed from 21 to 24
+        minSdk 24                          // Required by Play Billing v6+
         targetSdk 35
         versionCode 7                      // Changed from 4 to 5
         versionName "1.0.6"
+        // Required for Play Billing Library v6+
+        resValue "string", "play_billing_provider_authority", "com.android.vending"
     }
 
     signingConfigs {
@@ -43,4 +45,7 @@ android {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
+    // Google Play Billing dependency is pulled transitively by Flutter plugin,
+    // but keep explicit to lock major version compatibility if needed.
+    implementation 'com.android.billingclient:billing-ktx:6.2.1'
 }

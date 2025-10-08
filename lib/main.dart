@@ -9,6 +9,7 @@ import 'core/taxonomy/tag_migration.dart';
 import 'core/streak/streak_service.dart';
 import 'app.dart';
 import 'data/services/onboarding_service.dart';
+import 'data/services/billing_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +33,9 @@ void main() async {
 
   // Initialize onboarding service (reads flag)
   await OnboardingService.init();
+
+  // Initialize billing (IAP) service
+  await BillingService.init();
 
   runApp(
     const ProviderScope(

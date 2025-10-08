@@ -60,6 +60,9 @@ dependencies:
   
   # Links
   url_launcher: ^6.3.0
+
+  # In‑App Purchases (Google Play Billing & App Store)
+  in_app_purchase: ^3.1.14
   
   # OCR & Image Processing
   image_picker: ^1.0.7
