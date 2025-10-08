@@ -78,10 +78,33 @@ class BillingService {
 
     // Subscriptions on Google Play require an offerToken. Pick the first available offer.
     if (Platform.isAndroid && product is GooglePlayProductDetails) {
-      final offerDetails = product.billingClientProduct.subscriptionOfferDetails;
-      final String? offerToken = (offerDetails != null && offerDetails.isNotEmpty)
-          ? offerDetails.first.offerToken
-          : null;
+      final offers = product.billingClientProduct.subscriptionOfferDetails;
+
+      // Select an offer matching the intended billing period if possible
+      // (e.g., basePlanId or offerTags containing "month"/"year").
+      dynamic selectedOffer; // SubscriptionOfferDetails type (kept dynamic to avoid import churn)
+      if (offers != null && offers.isNotEmpty) {
+        for (final o in offers) {
+          final String basePlan = (o.basePlanId ?? '').toLowerCase();
+          final List<String> tags = (o.offerTags ?? <String>[]).map((t) => t.toLowerCase()).toList();
+          if (plan == 'monthly' && (basePlan.contains('month') || tags.any((t) => t.contains('month')))) {
+            selectedOffer = o;
+            break;
+          }
+          if ((plan == 'yearly' || plan == 'annual') &&
+              (basePlan.contains('year') || basePlan.contains('annual') || tags.any((t) => t.contains('year') || t.contains('annual')))) {
+            selectedOffer = o;
+            break;
+          }
+        }
+        selectedOffer ??= offers.first;
+      }
+
+      final String? offerToken = selectedOffer?.offerToken;
+      if (offerToken == null || offerToken.isEmpty) {
+        _pendingPurchaseCompleter = null;
+        return false; // No valid offer available
+      }
 
       final GooglePlayPurchaseParam purchaseParam = GooglePlayPurchaseParam(
         productDetails: product,

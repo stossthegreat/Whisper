@@ -63,7 +63,6 @@ dependencies:
 
   # In‑App Purchases (Google Play Billing & App Store)
   in_app_purchase: ^3.1.14
-  in_app_purchase_android: ^0.3.6
   in_app_purchase_android: ^0.3.10
   
   # OCR & Image Processing
