@@ -43,15 +43,12 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-android/
 .env
 beguile-ai-backend/
-android/
 .env
 beguile-ai-backend/
-android/
 .env
 beguile-ai-backend/
-android/
 beguile-ai-backend/
 .env
+android/
