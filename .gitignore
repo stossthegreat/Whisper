@@ -46,3 +46,6 @@ app.*.map.json
 android/
 .env
 beguile-ai-backend/
+android/
+.env
+beguile-ai-backend/
