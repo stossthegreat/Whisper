@@ -110,13 +110,12 @@ class ScanOutputCard extends StatelessWidget {
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.auto_awesome,
-                    color: Colors.white,
-                    size: 24,
+                children: const [
+                  Text(
+                    '🔮',
+                    style: TextStyle(color: Colors.white, fontSize: 22),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Text(
                     'Beguile AI',
                     style: TextStyle(
@@ -213,7 +212,7 @@ Powered by Beguile AI 🚀
           style: WFTextStyles.bodyMedium.copyWith(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Colors.black,
+            color: Colors.white,
           ),
         ),
         const SizedBox(height: WFDims.sectionSpacing),
@@ -248,7 +247,7 @@ Powered by Beguile AI 🚀
                       style: WFTextStyles.bodyMedium.copyWith(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: Colors.black,
+                        color: Colors.white,
                       ),
                     ),
                   ),

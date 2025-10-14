@@ -28,19 +28,22 @@ class BillingService {
 
   static Future<void> init() async {
     if (_initialized) return;
-    final bool available = await _inAppPurchase.isAvailable();
+    
+    try {
+      final bool available = await _inAppPurchase.isAvailable();
+      print('Billing available: $available');
 
-    _purchaseSub = _inAppPurchase.purchaseStream.listen(
-      _handlePurchaseUpdates,
-      onDone: () => _purchaseSub?.cancel(),
-      onError: (err) => print('Purchase stream error: $err'),
-    );
+      _purchaseSub = _inAppPurchase.purchaseStream.listen(
+        _handlePurchaseUpdates,
+        onDone: () => _purchaseSub?.cancel(),
+        onError: (err) => print('Purchase stream error: $err'),
+      );
+    } catch (e) {
+      print('Billing service initialization failed (likely web): $e');
+      // Continue without billing on web
+    }
 
     _initialized = true;
-    if (!available) {
-      print('⚠️ In-app purchases unavailable');
-      return;
-    }
   }
 
   static Future<Map<String, ProductDetails>> loadProductsByPlan() async {

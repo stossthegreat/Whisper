@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/providers/auth_providers.dart';
 import '../../ui/pages/main_shell.dart';
-import '../../ui/pages/lessons/lessons_page.dart';
+import '../../ui/pages/scan/scan_page.dart';
+import '../../ui/pages/council/council_page.dart';
 import '../../ui/pages/mentors/mentors_page.dart';
 import '../../ui/pages/analyze/analyze_page.dart';
 import '../../ui/pages/profile/profile_page.dart';
@@ -39,7 +40,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // If we're on root/home, immediately route based on auth state to avoid blank screen
       if (isOnRootOrHome) {
-        if (authState == AuthState.authenticated) return '/mentors';
+        if (authState == AuthState.authenticated) return '/scan';
         // If onboarding already completed previously, skip to paywall/login path
         return OnboardingService.isCompleted ? '/paywall' : '/onboarding';
       }
@@ -51,9 +52,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return OnboardingService.isCompleted ? '/paywall' : '/onboarding';
       }
 
-      // Authenticated: send to lessons from login/onboarding/paywall
+      // Authenticated: send to scan from login/onboarding/paywall
       if (authState == AuthState.authenticated && (isOnLogin || isOnSignup || isOnOnboarding || isOnPaywall)) {
-        return '/mentors';
+        return '/scan';
       }
       return null;
     },
@@ -102,9 +103,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
         routes: [
           GoRoute(
-            path: '/lessons',
-            name: 'lessons',
-            builder: (context, state) => const LessonsPage(),
+            path: '/scan',
+            name: 'scan',
+            builder: (context, state) => const ScanPage(),
+          ),
+          GoRoute(
+            path: '/council',
+            name: 'council',
+            builder: (context, state) => const CouncilPage(),
           ),
           GoRoute(
             path: '/mentors',
@@ -112,19 +118,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const MentorsPage(),
           ),
           GoRoute(
-            path: '/settings',
-            name: 'settings',
-            builder: (context, state) => const SettingsPage(),
-          ),
-          GoRoute(
             path: '/analyze',
             name: 'analyze',
             builder: (context, state) => const AnalyzePage(),
           ),
           GoRoute(
-            path: '/profile',
-            name: 'profile',
+            path: '/vault',
+            name: 'vault',
             builder: (context, state) => const ProfilePage(),
+          ),
+          GoRoute(
+            path: '/settings',
+            name: 'settings',
+            builder: (context, state) => const SettingsPage(),
           ),
         ],
       ),

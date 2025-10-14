@@ -94,7 +94,7 @@ class _MetricBarState extends State<MetricBar>
                     gradient: widget.color != null
                         ? LinearGradient(colors: [widget.color!, widget.color!])
                         : WFGradients
-                            .redPink, // Default to red→pink for danger metrics
+                            .buttonGradient, // Default to button gradient for danger metrics
                   ),
                 ),
               );

@@ -1,29 +1,34 @@
 import 'package:flutter/material.dart';
 
 class WFColors {
-  // Base: #0B0F14 (near-black)
-  static const Color base = Color(0xFF0B0F14);
+  // BEGUILE AI CHARCOAL BASE
+  static const Color base = Color(0xFF0B0B0B);
+  static const Color baseGradientStart = Color(0xFF0B0B0B);
+  static const Color baseGradientMid = Color(0xFF0D0D0D);
+  static const Color baseGradientEnd = Color(0xFF050505);
 
-  // Primary and surface colors
-  static const Color primary = Color(0xFF8B5CF6); // purple-500
+  // BEGUILE AI ACCENT GRADIENTS
+  static const Color primary = Color(0xFF34D399); // emerald
+  static const Color secondary = Color(0xFFF472B6); // fuchsia
+  static const Color tertiary = Color(0xFFA78BFA); // violet
   static const Color surface = Color(0xFF1F2937); // gray-800
 
-  // Glass panels: white 28–36% opacity
-  static const Color glassLight = Color(0x47FFFFFF); // 28% white
-  static const Color glassMedium = Color(0x5CFFFFFF); // 36% white
+  // BEGUILE AI GLASS SYSTEM
+  static const Color glassLight = Color(0x0CFFFFFF); // 5% white
+  static const Color glassMedium = Color(0x1AFFFFFF); // 10% white
+  static const Color glassBorder = Color(0x1AFFFFFF); // 10% white border
 
-  // Border: rgba(168,85,255,0.35)
-  static const Color glassBorder = Color(0x59A855FF);
-
-  // Gradients
-  static const List<Color> tealPurple = [
-    Color(0xFF14B8A6), // teal-500
-    Color(0xFF8B5CF6), // purple-500
+  // BEGUILE AI SIGNATURE GRADIENTS
+  static const List<Color> beguileGradient = [
+    Color(0xFF34D399), // emerald
+    Color(0xFFF472B6), // fuchsia
+    Color(0xFFA78BFA), // violet
   ];
 
-  static const List<Color> redPink = [
-    Color(0xFFEF4444), // red-500
-    Color(0xFFEC4899), // pink-500
+  static const List<Color> buttonGradient = [
+    Color(0xFFFF5555), // red
+    Color(0xFFFF8844), // orange
+    Color(0xFFFF33AA), // pink
   ];
 
   // Purple variants
@@ -44,13 +49,11 @@ class WFColors {
   static const Color gray800 = Color(0xFF1F2937);
   static const Color gray900 = Color(0xFF111827);
 
-  // Text colors
-  static const Color textPrimary = Color(0xFFFFFFFF); // white (was near-black)
-  static const Color textSecondary =
-      Color(0xFFE5E7EB); // gray-200 (was gray-700)
-  static const Color textTertiary =
-      Color(0xFF9CA3AF); // gray-400 (was gray-500)
-  static const Color textMuted = Color(0xFF6B7280); // gray-500 (was gray-400)
+  // BEGUILE AI TEXT SYSTEM
+  static const Color textPrimary = Color(0xFFFFFFFF); // white
+  static const Color textSecondary = Color(0xB3FFFFFF); // white70
+  static const Color textTertiary = Color(0x8AFFFFFF); // white54
+  static const Color textMuted = Color(0x66FFFFFF); // white40
 
   // Status colors
   static const Color success = Color(0xFF10B981);

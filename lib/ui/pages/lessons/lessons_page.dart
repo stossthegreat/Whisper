@@ -24,7 +24,6 @@ class _LessonsPageState extends ConsumerState<LessonsPage> {
 
     return Scaffold(
       backgroundColor: WFColors.base,
-      appBar: const AppHeader(),
       body: SafeArea(
         child: profileAsync.when(
           data: (profile) {

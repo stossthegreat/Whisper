@@ -18,7 +18,6 @@ class StylebookPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: WFColors.base,
-      appBar: const AppHeader(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(WFDims.paddingL),
         child: Column(

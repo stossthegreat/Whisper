@@ -51,7 +51,7 @@ class ArchetypePills extends StatelessWidget {
   }
 
   Color _getArchetypeColor(int weight) {
-    if (weight >= 80) return WFColors.redPink[0];
+    if (weight >= 80) return WFColors.buttonGradient[0];
     if (weight >= 60) return const Color(0xFFF59E0B);
     return WFColors.purple400;
   }

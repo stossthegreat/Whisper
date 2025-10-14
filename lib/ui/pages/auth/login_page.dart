@@ -60,7 +60,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       final authService = ref.read(authServiceProvider);
       await authService.signInWithGoogle();
       if (mounted) {
-        context.go('/mentors');
+        context.go('/scan');
       }
     } catch (e) {
       if (mounted) {
@@ -82,7 +82,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       final authService = ref.read(authServiceProvider);
       await authService.signInWithApple();
       if (mounted) {
-        context.go('/mentors');
+        context.go('/scan');
       }
     } catch (e) {
       if (mounted) {
@@ -116,7 +116,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         );
       }
       if (mounted) {
-        context.go('/mentors');
+        context.go('/scan');
       }
     } catch (e) {
       if (mounted) {
@@ -133,7 +133,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: WFColors.base,
-      appBar: const AppHeader(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(WFDims.paddingL),

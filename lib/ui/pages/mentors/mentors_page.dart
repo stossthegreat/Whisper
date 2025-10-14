@@ -35,9 +35,17 @@ class _MentorsPageState extends ConsumerState<MentorsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: WFColors.base,
-      appBar: const AppHeader(),
-      body: SafeArea(
-        child: _isLoading ? const _LoadingShell() : const _MentorsContent(),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [WFColors.baseGradientStart, WFColors.baseGradientMid, WFColors.baseGradientEnd],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: _isLoading ? const _LoadingShell() : const _MentorsContent(),
+        ),
       ),
     );
   }

@@ -50,7 +50,6 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
 
     return Scaffold(
       backgroundColor: WFColors.base,
-      appBar: const AppHeader(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(WFDims.paddingL),

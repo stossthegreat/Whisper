@@ -13,14 +13,27 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
         padding: const EdgeInsets.only(
             top: 20), // Add top padding to move text lower
         child: const Center(
-          child: Text(
-            "Beguile AI",
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 48,
-              letterSpacing: 1.2,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '🔮',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 40,
+                ),
+              ),
+              SizedBox(width: 12),
+              Text(
+                "Beguile AI",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 48,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
           ),
         ),
       ),

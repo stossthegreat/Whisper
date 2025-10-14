@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'data/services/cache_service.dart';
 import 'core/taxonomy/tag_migration.dart';
@@ -13,6 +14,9 @@ import 'data/services/billing_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize environment variables
+  await dotenv.load(fileName: ".env");
 
   // Initialize Firebase
   await Firebase.initializeApp(
@@ -34,12 +38,16 @@ void main() async {
   // Initialize onboarding service (reads flag)
   await OnboardingService.init();
 
-  // Initialize billing (IAP) service
-  await BillingService.init();
+  // Initialize billing (IAP) service (skip on web if fails)
+  try {
+    await BillingService.init();
+  } catch (e) {
+    print('Billing service init failed (likely web): $e');
+  }
 
   runApp(
     const ProviderScope(
-      child: WhisperfireApp(),
+      child: BeguileApp(),
     ),
   );
 }

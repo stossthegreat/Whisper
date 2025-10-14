@@ -127,13 +127,12 @@ class PatternOutputCard extends StatelessWidget {
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.auto_awesome,
-                    color: Colors.white,
-                    size: 24,
+                children: const [
+                  Text(
+                    '🔮',
+                    style: TextStyle(color: Colors.white, fontSize: 22),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Text(
                     'Beguile AI',
                     style: TextStyle(
@@ -217,7 +216,7 @@ class PatternOutputCard extends StatelessWidget {
           style: WFTextStyles.bodyMedium.copyWith(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Colors.black,
+            color: Colors.white,
           ),
         ),
         const SizedBox(height: WFDims.sectionSpacing),
@@ -253,7 +252,7 @@ class PatternOutputCard extends StatelessWidget {
                     style: WFTextStyles.bodyMedium.copyWith(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: Colors.black,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -287,7 +286,7 @@ class PatternOutputCard extends StatelessWidget {
               fontStyle: FontStyle.italic,
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Colors.black,
+              color: Colors.white,
             ),
           ),
         ),

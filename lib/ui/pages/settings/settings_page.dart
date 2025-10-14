@@ -21,7 +21,6 @@ class SettingsPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: WFColors.base,
-      appBar: const AppHeader(),
       body: SafeArea(
         child: profileAsync.when(
           data: (profile) => _buildSettingsContent(context, profile),

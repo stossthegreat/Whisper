@@ -63,12 +63,13 @@ class _MainShellContent extends StatelessWidget {
       body: child,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: WFColors.surface,
+          color: WFColors.glassLight,
+          border: Border(top: BorderSide(color: WFColors.glassBorder)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
+              color: Colors.black.withOpacity(0.6),
+              blurRadius: 25,
+              offset: const Offset(0, -8),
             ),
           ],
         ),
@@ -77,28 +78,32 @@ class _MainShellContent extends StatelessWidget {
           elevation: 0,
           type: BottomNavigationBarType.fixed,
           selectedItemColor: WFColors.primary,
-          unselectedItemColor: WFColors.textSecondary,
+          unselectedItemColor: WFColors.textTertiary,
           currentIndex: _getCurrentIndex(context),
           onTap: (index) => _onItemTapped(context, index),
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.psychology),
+              icon: Text('🕵️‍♀️', style: TextStyle(fontSize: 20)),
+              label: 'Scan',
+            ),
+            BottomNavigationBarItem(
+              icon: Text('🧠', style: TextStyle(fontSize: 20)),
+              label: 'Council',
+            ),
+            BottomNavigationBarItem(
+              icon: Text('👑', style: TextStyle(fontSize: 20)),
               label: 'Mentors',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.school),
-              label: 'Lessons',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.visibility),
+              icon: Text('🧩', style: TextStyle(fontSize: 20)),
               label: 'Analyze',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person),
-              label: 'Profile',
+              icon: Text('🔒', style: TextStyle(fontSize: 20)),
+              label: 'Vault',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
+              icon: Text('⚙️', style: TextStyle(fontSize: 20)),
               label: 'Settings',
             ),
           ],
@@ -109,29 +114,33 @@ class _MainShellContent extends StatelessWidget {
 
   int _getCurrentIndex(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
-    if (location.startsWith('/mentors')) return 0;
-    if (location.startsWith('/lessons')) return 1;
-    if (location.startsWith('/analyze')) return 2;
-    if (location.startsWith('/profile')) return 3;
-    if (location.startsWith('/settings')) return 4;
+    if (location.startsWith('/scan')) return 0;
+    if (location.startsWith('/council')) return 1;
+    if (location.startsWith('/mentors')) return 2;
+    if (location.startsWith('/analyze')) return 3;
+    if (location.startsWith('/vault')) return 4;
+    if (location.startsWith('/settings')) return 5;
     return 0;
   }
 
   void _onItemTapped(BuildContext context, int index) {
     switch (index) {
       case 0:
-        context.goNamed('mentors');
+        context.goNamed('scan');
         break;
       case 1:
-        context.goNamed('lessons');
+        context.goNamed('council');
         break;
       case 2:
-        context.goNamed('analyze');
+        context.goNamed('mentors');
         break;
       case 3:
-        context.goNamed('profile');
+        context.goNamed('analyze');
         break;
       case 4:
+        context.goNamed('vault');
+        break;
+      case 5:
         context.goNamed('settings');
         break;
     }

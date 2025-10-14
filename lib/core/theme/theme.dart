@@ -13,26 +13,19 @@ class WFTheme {
         useMaterial3: true,
         brightness: Brightness.dark,
         scaffoldBackgroundColor: WFColors.base,
+        fontFamily: 'Inter',
         colorScheme: const ColorScheme.dark(
-          primary: WFColors.purple400,
-          secondary: WFColors.purple300,
+          primary: WFColors.primary,
+          secondary: WFColors.secondary,
           surface: WFColors.base,
           onPrimary: WFColors.textPrimary,
           onSecondary: WFColors.textPrimary,
           onSurface: WFColors.textPrimary,
         ),
-        textTheme: TextTheme(
-          displayLarge: WFTextStyles.h1,
-          displayMedium: WFTextStyles.h2,
-          displaySmall: WFTextStyles.h3,
-          headlineMedium: WFTextStyles.h4,
-          headlineSmall: WFTextStyles.h5,
-          bodyLarge: WFTextStyles.bodyLarge,
-          bodyMedium: WFTextStyles.bodyMedium,
-          bodySmall: WFTextStyles.bodySmall,
-          labelLarge: WFTextStyles.labelLarge,
-          labelMedium: WFTextStyles.labelMedium,
-          labelSmall: WFTextStyles.labelSmall,
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(color: WFColors.textSecondary),
+          bodySmall: TextStyle(color: WFColors.textTertiary),
+          titleLarge: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: WFColors.textPrimary),
         ),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.transparent,
@@ -41,11 +34,11 @@ class WFTheme {
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: WFColors.purple500,
+            backgroundColor: WFColors.primary,
             foregroundColor: WFColors.textPrimary,
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(20),
             ),
           ),
         ),

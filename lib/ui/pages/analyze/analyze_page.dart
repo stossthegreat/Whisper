@@ -97,7 +97,6 @@ class _AnalyzePageState extends ConsumerState<AnalyzePage> {
 
     return Scaffold(
       backgroundColor: WFColors.base,
-      appBar: const AppHeader(),
       body: SafeArea(
         child: SingleChildScrollView(
           controller: _scrollController,
@@ -511,7 +510,7 @@ class _AnalyzePageState extends ConsumerState<AnalyzePage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('❌ OCR Error: ${ocrError.toString()}'),
-                backgroundColor: WFColors.redPink[0],
+                backgroundColor: WFColors.buttonGradient[0],
                 duration: const Duration(seconds: 4),
               ),
             );
@@ -537,7 +536,7 @@ class _AnalyzePageState extends ConsumerState<AnalyzePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error processing image: ${e.toString()}'),
-            backgroundColor: WFColors.redPink[0],
+            backgroundColor: WFColors.buttonGradient[0],
           ),
         );
       }
@@ -605,7 +604,7 @@ class _AnalyzePageState extends ConsumerState<AnalyzePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Analysis failed: $e', style: WFTextStyles.bodySmall),
-            backgroundColor: WFColors.redPink[0],
+            backgroundColor: WFColors.buttonGradient[0],
           ),
         );
       }

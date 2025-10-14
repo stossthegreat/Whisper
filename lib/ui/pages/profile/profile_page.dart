@@ -1,16 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/theme.dart';
-import '../../../core/streak/streak_service.dart';
-import '../../../core/streak/streak_flame.dart';
-import '../../../data/providers.dart';
-import '../../../data/models/profile_models.dart';
-import '../../../data/models/lesson_models.dart';
-import '../../../content/lessons_catalog.dart';
-import '../../shared/loading_shell.dart';
-import '../../../features/lessons/lesson_player/lesson_player_page.dart';
-import '../../../widgets/app_header.dart';
+import '../../atoms/glass_card.dart';
+
+// Vault Entry Model
+class VaultEntry {
+  final String id;
+  final String type; // 'scan' or 'council'
+  final String title;
+  final String content;
+  final DateTime timestamp;
+  final Map<String, dynamic> metadata;
+
+  VaultEntry({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.content,
+    required this.timestamp,
+    required this.metadata,
+  });
+}
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -19,556 +31,497 @@ class ProfilePage extends ConsumerStatefulWidget {
   ConsumerState<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends ConsumerState<ProfilePage>
-    with TickerProviderStateMixin {
-  late Map<String, AnimationController> _progressControllers;
-  late Map<String, Animation<double>> _progressAnimations;
+class _ProfilePageState extends ConsumerState<ProfilePage> {
+  String selectedFilter = 'all'; // 'all', 'scan', 'council'
+  final TextEditingController _searchController = TextEditingController();
+  String searchQuery = '';
 
-  @override
-  void initState() {
-    super.initState();
-    _initAnimations();
-  }
-
-  void _initAnimations() {
-    _progressControllers = {};
-    _progressAnimations = {};
-
-    for (final category in kCategories) {
-      _progressControllers[category] = AnimationController(
-        duration: const Duration(milliseconds: 500),
-        vsync: this,
-      );
-      _progressAnimations[category] = Tween<double>(
-        begin: 0.0,
-        end: 1.0,
-      ).animate(CurvedAnimation(
-        parent: _progressControllers[category]!,
-        curve: Curves.easeOutCubic,
-      ));
-    }
-  }
+  // Mock vault entries - in real app, this would come from local storage
+  final List<VaultEntry> _vaultEntries = [
+    VaultEntry(
+      id: '1',
+      type: 'scan',
+      title: 'Gaslighting Analysis',
+      content: 'They masked control as care. Pattern exposed.',
+      timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+      metadata: {'score': 87, 'mentor': 'Machiavelli'},
+    ),
+    VaultEntry(
+      id: '2',
+      type: 'council',
+      title: 'Rizz Strategy Debate',
+      content: 'Desire answers to rhythm, not volume. Victory favors restraint.',
+      timestamp: DateTime.now().subtract(const Duration(days: 1)),
+      metadata: {'winner': 'Casanova', 'mode': 'rizz'},
+    ),
+    VaultEntry(
+      id: '3',
+      type: 'scan',
+      title: 'Manipulation Tactics',
+      content: 'You held frame; silence became your sword.',
+      timestamp: DateTime.now().subtract(const Duration(days: 2)),
+      metadata: {'score': 92, 'mentor': 'Sun Tzu'},
+    ),
+  ];
 
   @override
   void dispose() {
-    for (final controller in _progressControllers.values) {
-      controller.dispose();
-    }
+    _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final profileAsync = ref.watch(userProfileProvider);
+    final filteredEntries = _getFilteredEntries();
 
     return Scaffold(
       backgroundColor: WFColors.base,
-      appBar: const AppHeader(),
       body: SafeArea(
-        child: profileAsync.when(
-          data: (profile) {
-            // Start animations after build
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              for (final controller in _progressControllers.values) {
-                controller.forward();
-              }
-            });
-
-            return CustomScrollView(
-              slivers: [
-                // Streak Section
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: FutureBuilder<StreakData>(
-                      future: StreakService.getStreakData(),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData) {
-                          final streakData = snapshot.data!;
-                          return Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  WFColors.purple400.withOpacity(0.2),
-                                  WFColors.purple600.withOpacity(0.1),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: WFColors.purple400.withOpacity(0.3),
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                // Streak Flame
-                                StreakFlame(streak: streakData.currentStreak),
-                                const SizedBox(width: 20),
-                                // Streak Info
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${streakData.currentStreak} Day Streak',
-                                        style: GoogleFonts.playfairDisplay(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        StreakService.getStreakMessage(streakData.currentStreak),
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: WFColors.gray400,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Longest: ${streakData.longestStreak} days',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: WFColors.gray500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                children: [
+                  const Text(
+                    '🔒',
+                    style: TextStyle(fontSize: 32),
                   ),
-                ),
-                
-                // Category cards
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Your Categories',
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white, // White text for profile page
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        ...kCategories.map((category) =>
-                            _buildCategoryCard(context, category, profile)),
-                      ],
-                    ),
-                  ),
-                ),
-                // Profile stats
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(WFDims.paddingL),
-                    child: Container(
-                      padding: const EdgeInsets.all(WFDims.paddingL),
-                      decoration: BoxDecoration(
-                        color: WFColors.gray800.withOpacity(0.3),
-                        borderRadius:
-                            BorderRadius.circular(WFDims.radiusMedium),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Profile Stats', style: WFTextStyles.h3),
-                          const SizedBox(height: WFDims.spacingM),
-                          // FIXED: Responsive stats layout to prevent overflow
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              if (constraints.maxWidth < 400) {
-                                // Stack vertically on very small screens
-                                return Column(
-                                  children: [
-                                    _StatCard(
-                                      title: 'Total XP',
-                                      value: '${profile.xpTotal}',
-                                      icon: Icons.star,
-                                      color: WFColors.purple400,
-                                    ),
-                                    const SizedBox(height: WFDims.spacingM),
-                                    _StatCard(
-                                      title: 'Lessons Completed',
-                                      value:
-                                          '${profile.unlockedLessons.length}',
-                                      icon: Icons.school,
-                                      color: WFColors.success,
-                                    ),
-                                  ],
-                                );
-                              } else {
-                                // Side by side on larger screens
-                                return Row(
-                                  children: [
-                                    Expanded(
-                                      child: _StatCard(
-                                        title: 'Total XP',
-                                        value: '${profile.xpTotal}',
-                                        icon: Icons.star,
-                                        color: WFColors.purple400,
-                                      ),
-                                    ),
-                                    const SizedBox(width: WFDims.spacingM),
-                                    Expanded(
-                                      child: _StatCard(
-                                        title: 'Lessons Completed',
-                                        value:
-                                            '${profile.unlockedLessons.length}',
-                                        icon: Icons.school,
-                                        color: WFColors.success,
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }
-                            },
-                          ),
-                          const SizedBox(height: WFDims.spacingM),
-                          // Reset onboarding button for testing
-                          ElevatedButton(
-                            onPressed: () async {
-                              profile.hasSeenOnboarding = false;
-                              await ref
-                                  .read(profileRepoProvider)
-                                  .saveProfile(profile);
-                              ref.invalidate(userProfileProvider);
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          'Onboarding reset! Refresh the app to see it.')),
-                                );
-                              }
-                            },
-                            child: const Text('Reset Onboarding (Test)'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-          loading: () => const LoadingShell(),
-          error: (error, stack) => const Center(
-            child: Text('Error loading profile'),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryCard(
-      BuildContext context, String category, UserProfile profile) {
-    final categoryName = kCategoryNames[category]!;
-    final color = _getCategoryColor(category);
-    final progress = profile.categories[category] ?? CategoryProgress();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Icon(
-                    _getCategoryIcon(category),
-                    color: color,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
+                  const SizedBox(width: 12),
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        categoryName,
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 20,
+                        'Vault',
+                        style: WFTextStyles.h1.copyWith(
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black, // Black text for lessons page
                         ),
                       ),
                       Text(
-                        'Level ${progress.level}',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: Colors.grey[600],
+                        'Your AI message outputs',
+                        style: WFTextStyles.bodyMedium.copyWith(
+                          color: WFColors.textTertiary,
                         ),
                       ),
                     ],
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${progress.xp} XP',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+                ],
+              ),
+              
+              const SizedBox(height: 24),
 
-            // Progress bar
-            AnimatedBuilder(
-              animation: _progressAnimations[category]!,
-              builder: (context, child) {
-                final animatedProgress = _progressAnimations[category]!.value;
-                final bandPercent = _bandPercent(progress.xp, progress.level);
-                final animatedBandPercent = bandPercent * animatedProgress;
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              // Search and Filter
+              GlassCard(
+                child: Column(
                   children: [
-                    LinearProgressIndicator(
-                      value: animatedBandPercent,
-                      backgroundColor: Colors.grey[200],
-                      valueColor: AlwaysStoppedAnimation<Color>(color),
-                      minHeight: 8,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'XP to next: ${_xpToNext(progress.level, progress.xp)}',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: Colors.grey[600],
+                    // Search Bar
+                    TextField(
+                      controller: _searchController,
+                      onChanged: (value) {
+                        setState(() {
+                          searchQuery = value.toLowerCase();
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Search your vault...',
+                        hintStyle: WFTextStyles.bodyMedium.copyWith(
+                          color: WFColors.textMuted,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: WFColors.purple400,
+                        ),
+                        filled: true,
+                        fillColor: WFColors.gray800.withOpacity(0.5),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: WFColors.glassBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: WFColors.glassBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: WFColors.purple400, width: 2),
+                        ),
                       ),
                     ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Filter Chips
+                    Row(
+                      children: [
+                        _FilterChip(
+                          label: 'All',
+                          isSelected: selectedFilter == 'all',
+                          onTap: () => setState(() => selectedFilter = 'all'),
+                        ),
+                        const SizedBox(width: 8),
+                        _FilterChip(
+                          label: '🔍 Scan',
+                          isSelected: selectedFilter == 'scan',
+                          onTap: () => setState(() => selectedFilter = 'scan'),
+                        ),
+                        const SizedBox(width: 8),
+                        _FilterChip(
+                          label: '🧠 Council',
+                          isSelected: selectedFilter == 'council',
+                          onTap: () => setState(() => selectedFilter = 'council'),
+                        ),
+                      ],
+                    ),
                   ],
-                );
-              },
-            ),
-
-            const SizedBox(height: 20),
-
-            // Continue button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => _continueCategory(context, category, progress),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: color,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'Continue',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
                 ),
               ),
-            ),
-          ],
+
+              const SizedBox(height: 20),
+
+              // Vault Entries
+              Expanded(
+                child: filteredEntries.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                        itemCount: filteredEntries.length,
+                        itemBuilder: (context, index) {
+                          final entry = filteredEntries[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _VaultEntryCard(
+                              entry: entry,
+                              onShare: () => _shareEntry(entry),
+                              onCopy: () => _copyEntry(entry),
+                              onDelete: () => _deleteEntry(entry),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _continueCategory(
-      BuildContext context, String category, CategoryProgress progress) {
-    // Find next lesson to continue
-    final nextLesson = _findNextLesson(category, progress);
+  List<VaultEntry> _getFilteredEntries() {
+    var entries = _vaultEntries;
+    
+    // Apply type filter
+    if (selectedFilter != 'all') {
+      entries = entries.where((e) => e.type == selectedFilter).toList();
+    }
+    
+    // Apply search filter
+    if (searchQuery.isNotEmpty) {
+      entries = entries.where((e) =>
+          e.title.toLowerCase().contains(searchQuery) ||
+          e.content.toLowerCase().contains(searchQuery)).toList();
+    }
+    
+    // Sort by timestamp (newest first)
+    entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    
+    return entries;
+  }
 
-    if (nextLesson != null) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => LessonPlayerPage(
-            category: category,
-            world: nextLesson.world,
-            lesson: nextLesson.lesson,
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('🔒', style: TextStyle(fontSize: 64)),
+          const SizedBox(height: 16),
+          Text(
+            'Your vault is empty',
+            style: WFTextStyles.h3.copyWith(
+              color: WFColors.textSecondary,
+            ),
           ),
-        ),
-      );
-    } else {
-      // Start from world 1, lesson 1 if no progress
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => LessonPlayerPage(
-            category: category,
-            world: 1,
-            lesson: 1,
+          const SizedBox(height: 8),
+          Text(
+            'AI outputs from Scan and Council will appear here',
+            style: WFTextStyles.bodyMedium.copyWith(
+              color: WFColors.textTertiary,
+            ),
+            textAlign: TextAlign.center,
           ),
-        ),
-      );
-    }
+        ],
+      ),
+    );
   }
 
-  Lesson? _findNextLesson(String category, CategoryProgress progress) {
-    // TODO: Implement logic to find next lesson based on unlocked lessons
-    // For now, return null to start from beginning
-    return null;
+  void _shareEntry(VaultEntry entry) {
+    final text = '${entry.title}\n\n${entry.content}\n\n— Beguile AI ${entry.type.toUpperCase()}';
+    Share.share(text);
   }
 
-  int _prevThreshold(int level) => level <= 1
-      ? 0
-      : level == 2
-          ? 100
-          : level == 3
-              ? 250
-              : 500;
-
-  int _nextThreshold(int level) => level == 1
-      ? 100
-      : level == 2
-          ? 250
-          : level == 3
-              ? 500
-              : 999999;
-
-  double _bandPercent(int xp, int level) {
-    final p = _prevThreshold(level);
-    final n = _nextThreshold(level);
-    final b = (xp - p).clamp(0, n - p).toDouble();
-    return (n - p) == 0 ? 1.0 : b / (n - p);
+  void _copyEntry(VaultEntry entry) {
+    final text = '${entry.title}\n\n${entry.content}';
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Copied to clipboard'),
+        backgroundColor: WFColors.purple400,
+      ),
+    );
   }
 
-  int _xpToNext(int level, int xp) {
-    final next = _nextThreshold(level);
-    return (next - xp).clamp(0, 999999);
-  }
-
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'charisma':
-        return const Color(0xFF9C27B0);
-      case 'gravity':
-        return const Color(0xFF9C27B0);
-      case 'frame':
-        return const Color(0xFF9C27B0);
-      case 'scarcity':
-        return const Color(0xFF9C27B0);
-      case 'composed_authority':
-        return const Color(0xFF9C27B0);
-      case 'hidden_dynamics':
-        return const Color(0xFF9C27B0);
-      default:
-        return Colors.purple;
-    }
-  }
-
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'charisma':
-        return Icons.favorite;
-      case 'gravity':
-        return Icons.arrow_downward;
-      case 'frame':
-        return Icons.crop_square;
-      case 'scarcity':
-        return Icons.trending_up;
-      case 'composed_authority':
-        return Icons.psychology;
-      case 'hidden_dynamics':
-        return Icons.masks;
-      default:
-        return Icons.school;
-    }
+  void _deleteEntry(VaultEntry entry) {
+    setState(() {
+      _vaultEntries.removeWhere((e) => e.id == entry.id);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Entry deleted'),
+        backgroundColor: WFColors.gray700,
+      ),
+    );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
+// Filter Chip Widget
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
 
-  const _StatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
+  const _FilterChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(WFDims.paddingM),
-      decoration: BoxDecoration(
-        color: WFColors.gray800.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(WFDims.radiusMedium),
-        border: Border.all(color: color.withOpacity(0.3)),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? WFColors.purple400.withOpacity(0.2)
+              : WFColors.gray800.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected 
+                ? WFColors.purple400
+                : WFColors.gray600.withOpacity(0.3),
+          ),
+        ),
+        child: Text(
+          label,
+          style: WFTextStyles.labelMedium.copyWith(
+            color: isSelected ? WFColors.purple300 : WFColors.textSecondary,
+          ),
+        ),
       ),
+    );
+  }
+}
+
+// Vault Entry Card Widget
+class _VaultEntryCard extends StatelessWidget {
+  final VaultEntry entry;
+  final VoidCallback onShare;
+  final VoidCallback onCopy;
+  final VoidCallback onDelete;
+
+  const _VaultEntryCard({
+    required this.entry,
+    required this.onShare,
+    required this.onCopy,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final typeIcon = entry.type == 'scan' ? '🔍' : '🧠';
+    final typeColor = entry.type == 'scan' ? WFColors.success : WFColors.info;
+    
+    return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Row(
             children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: WFDims.spacingS),
-              Expanded(
-                child: Text(
-                  title,
-                  style: WFTextStyles.bodyMedium.copyWith(
-                    color: WFColors.textSecondary,
-                    fontSize: 12,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: typeColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: typeColor.withOpacity(0.3),
                   ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(typeIcon, style: const TextStyle(fontSize: 12)),
+                    const SizedBox(width: 4),
+                    Text(
+                      entry.type.toUpperCase(),
+                      style: WFTextStyles.labelSmall.copyWith(
+                        color: typeColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Text(
+                _formatTimestamp(entry.timestamp),
+                style: WFTextStyles.labelSmall.copyWith(
+                  color: WFColors.textTertiary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: WFDims.spacingS),
+          
+          const SizedBox(height: 12),
+          
+          // Title
           Text(
-            value,
-            style: WFTextStyles.h3.copyWith(color: color),
+            entry.title,
+            style: WFTextStyles.h4.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          
+          const SizedBox(height: 8),
+          
+          // Content
+          Text(
+            entry.content,
+            style: WFTextStyles.bodyMedium.copyWith(
+              color: WFColors.textSecondary,
+            ),
+            maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            maxLines: 1,
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Metadata
+          if (entry.metadata.isNotEmpty) ...[
+            Wrap(
+              spacing: 8,
+              children: entry.metadata.entries.map((e) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: WFColors.gray800.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '${e.key}: ${e.value}',
+                    style: WFTextStyles.labelSmall.copyWith(
+                      color: WFColors.textTertiary,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
+          ],
+          
+          // Actions
+          Row(
+            children: [
+              _ActionButton(
+                icon: Icons.copy,
+                label: 'Copy',
+                onTap: onCopy,
+              ),
+              const SizedBox(width: 8),
+              _ActionButton(
+                icon: Icons.share,
+                label: 'Share',
+                onTap: onShare,
+              ),
+              const Spacer(),
+              _ActionButton(
+                icon: Icons.delete_outline,
+                label: 'Delete',
+                onTap: onDelete,
+                isDestructive: true,
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+    
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
+  }
+}
+
+// Action Button Widget
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDestructive;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isDestructive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDestructive ? WFColors.error : WFColors.purple400;
+    
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: color.withOpacity(0.3),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: color,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: WFTextStyles.labelSmall.copyWith(
+                color: color,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
