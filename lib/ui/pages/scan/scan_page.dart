@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'dart:math';
 
 import '../../../core/theme/theme.dart';
 import '../../../data/services/constants.dart';
 import '../../../data/models/mentor_models.dart';
 import '../../../services/beguile_api.dart';
-import '../../../widgets/app_header.dart';
+import '../../../widgets/tab_header.dart';
+import '../../../widgets/state_widgets.dart';
 import '../../atoms/glass_card.dart';
 
 // BEGUILE AI — SCAN TAB
@@ -20,11 +23,48 @@ class ScanPage extends ConsumerStatefulWidget {
 }
 
 class _ScanPageState extends ConsumerState<ScanPage> {
-  Mentor selectedMentor = MentorConstants.mentors[0];
+  // Scan-specific mentors (includes Monroe for backend compatibility)
+  static final List<Mentor> _scanMentors = [
+    ...MentorConstants.mentors.where((m) => m.id != 'churchill'), // All except Churchill
+    const Mentor(
+      id: 'monroe',
+      name: 'Marilyn Monroe',
+      subtitle: 'Magnetic Charm',
+      avatar: '🌹',
+      description: 'Control the spotlight—never chase it',
+      color: ['#FF99C8', '#F472B6'], // soft pink to fuchsia
+      greeting: 'Darling, I am Marilyn Monroe. They only see what you show them. Softness can be armor when you choose it. Charm quietly—power doesn\'t need volume.',
+      presets: ['drill', 'advise', 'roleplay', 'chat'],
+    ),
+  ];
+
+  Mentor selectedMentor = _scanMentors[0];
   String perspective = 'you'; // 'you' | 'them'
   final TextEditingController _inputController = TextEditingController();
   ScanResult? result;
   bool isScanning = false;
+  bool _hasText = false;
+  String? errorMessage;
+  List<dynamic> verdicts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _inputController.addListener(() {
+      final hasText = _inputController.text.trim().isNotEmpty;
+      if (hasText != _hasText) {
+        setState(() {
+          _hasText = hasText;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _inputController.dispose();
+    super.dispose();
+  }
 
   final List<PowerMove> powerMovesYou = [
     PowerMove('⚔️', 'Frame Control', 'You set terms calmly and didn\'t chase.'),
@@ -56,10 +96,16 @@ class _ScanPageState extends ConsumerState<ScanPage> {
   Future<void> _runScan() async {
     if (_inputController.text.trim().isEmpty || isScanning) return;
 
-    setState(() {
-      isScanning = true;
-      result = null;
-    });
+    print("🔥 Calling Scan endpoint...");
+    
+    if (mounted) {
+      setState(() {
+        isScanning = true;
+        errorMessage = null;
+        verdicts = [];
+        result = null;
+      });
+    }
 
     try {
       // Call the real Beguile API
@@ -68,6 +114,8 @@ class _ScanPageState extends ConsumerState<ScanPage> {
         perspective: perspective == 'you' ? 'you' : 'them',
         mentorId: selectedMentor.id,
       );
+
+      print("✅ Response: $response");
 
       // Convert API response to UI model
       final moves = (response['points'] as List?)
@@ -82,28 +130,33 @@ class _ScanPageState extends ConsumerState<ScanPage> {
           ?.map((t) => t.toString())
           .toList() ?? [];
 
-      setState(() {
-        result = ScanResult(
-          score: (response['score'] as num?)?.toInt() ?? 85,
-          verdict: _generateVerdict(response),
-          moves: moves.take(3).toList(),
-          tags: selectedTags.take(6).toList(),
-          quote: response['quote']?.toString() ?? 'Power respects power.',
-        );
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Scan failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
+      final verdictsData = response['points'] as List? ?? [];
+
       if (mounted) {
         setState(() {
           isScanning = false;
+          verdicts = verdictsData;
+          result = ScanResult(
+            score: (response['score'] as num?)?.toInt() ?? 85,
+            verdict: _generateVerdict(response),
+            moves: moves.take(3).toList(),
+            tags: selectedTags.take(6).toList(),
+            quote: response['quote']?.toString() ?? 'Power respects power.',
+          );
+        });
+      }
+
+      if (verdictsData.isEmpty) {
+        print("⚠️ No results returned");
+      } else {
+        print("⚡ Rendering ${verdictsData.length} verdicts");
+      }
+    } catch (e) {
+      print("❌ Scan API error: $e");
+      if (mounted) {
+        setState(() {
+          isScanning = false;
+          errorMessage = e.toString();
         });
       }
     }
@@ -132,7 +185,6 @@ class _ScanPageState extends ConsumerState<ScanPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: WFColors.base,
-      appBar: const AppHeader(),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -147,7 +199,10 @@ class _ScanPageState extends ConsumerState<ScanPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(),
+                const TabHeader(
+                  title: 'Beguile AI',
+                  subtitle: 'SCAN',
+                ),
                 const SizedBox(height: 24),
                 _buildMentorSelector(),
                 const SizedBox(height: 20),
@@ -155,7 +210,13 @@ class _ScanPageState extends ConsumerState<ScanPage> {
                 const SizedBox(height: 20),
                 _buildInputSection(),
                 const SizedBox(height: 20),
-                if (result != null) ...[
+                if (isScanning) 
+                  const LoadingStateWidget(message: "🧠 Analyzing message...")
+                else if (errorMessage != null) 
+                  ErrorStateWidget(error: errorMessage!)
+                else if (result == null && verdicts.isEmpty) 
+                  const EmptyStateWidget(text: "No verdicts yet")
+                else if (result != null) ...[
                   _buildVerdictCard(),
                   const SizedBox(height: 20),
                   _buildShareCard(),
@@ -249,9 +310,9 @@ class _ScanPageState extends ConsumerState<ScanPage> {
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
             ),
-            itemCount: MentorConstants.mentors.length,
+            itemCount: _scanMentors.length,
             itemBuilder: (context, index) {
-              final mentor = MentorConstants.mentors[index];
+              final mentor = _scanMentors[index];
               final isSelected = selectedMentor.id == mentor.id;
               
               return GestureDetector(
@@ -397,7 +458,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
                     ],
                   ),
                   child: ElevatedButton(
-                    onPressed: (_inputController.text.trim().isNotEmpty && !isScanning) ? _runScan : null,
+                    onPressed: (_hasText && !isScanning) ? _runScan : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
@@ -951,22 +1012,34 @@ class _ScanPageState extends ConsumerState<ScanPage> {
 
   void _copyText() {
     if (result == null) return;
-    final lines = result!.moves.map((m) => '${m.emoji} ${m.title}').join('\n');
+    final lines = result!.moves.map((m) => '${m.emoji} ${m.title} — ${m.description}').join('\n');
     final text = '${selectedMentor.avatar} ${selectedMentor.name} — ${perspective == 'you' ? 'Your' : 'Their'} Verdict\n'
         '"${result!.verdict}"\n\n'
-        '🧠 ${result!.score}/100 • ELITE TIER\n'
+        '🧠 ${result!.score}/100 • ELITE TIER\n\n'
         '$lines\n\n'
-        'Beguile AI — Mars Edition';
-    // In a real app, you'd use Clipboard.setData here
+        '💬 "${result!.quote}"\n\n'
+        'Beguile AI';
+    
+    Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Copied to clipboard!')),
+      const SnackBar(
+        content: Text('Copied to clipboard!'),
+        backgroundColor: WFColors.purple400,
+      ),
     );
   }
 
   void _saveCard() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Screenshot this card to share. (Image export can be wired up later)')),
-    );
+    if (result == null) return;
+    final lines = result!.moves.map((m) => '${m.emoji} ${m.title} — ${m.description}').join('\n');
+    final text = '${selectedMentor.avatar} ${selectedMentor.name} — ${perspective == 'you' ? 'Your' : 'Their'} Verdict\n'
+        '"${result!.verdict}"\n\n'
+        '🧠 ${result!.score}/100 • ELITE TIER\n\n'
+        '$lines\n\n'
+        '💬 "${result!.quote}"\n\n'
+        'Beguile AI';
+    
+    Share.share(text);
   }
 }
 

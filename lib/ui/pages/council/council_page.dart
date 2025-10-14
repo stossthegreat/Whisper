@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'dart:math';
 
 import '../../../core/theme/theme.dart';
 import '../../../data/services/constants.dart';
 import '../../../data/models/mentor_models.dart';
 import '../../../services/beguile_api.dart';
+import '../../../widgets/tab_header.dart';
+import '../../../widgets/state_widgets.dart';
 import '../../atoms/glass_card.dart';
 
 // BEGUILE AI — COUNCIL ARENA
@@ -28,6 +32,9 @@ class _CouncilPageState extends ConsumerState<CouncilPage>
   Mentor? winner;
   String echo = '';
   bool isPlaying = false;
+  bool _hasText = false;
+  String? errorMessage;
+  List<dynamic> verdicts = [];
 
   late AnimationController _animationController;
 
@@ -45,23 +52,38 @@ class _CouncilPageState extends ConsumerState<CouncilPage>
       duration: const Duration(milliseconds: 6000),
       vsync: this,
     );
+    _inputController.addListener(() {
+      final hasText = _inputController.text.trim().isNotEmpty;
+      if (hasText != _hasText) {
+        setState(() {
+          _hasText = hasText;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _inputController.dispose();
     super.dispose();
   }
 
   Future<void> _summonCouncil() async {
     if (_inputController.text.trim().isEmpty || isPlaying) return;
 
-    setState(() {
-      isPlaying = true;
-      responses.clear();
-      winner = null;
-      echo = '';
-    });
+    print("🔥 Calling Council endpoint...");
+    
+    if (mounted) {
+      setState(() {
+        isPlaying = true;
+        errorMessage = null;
+        verdicts = [];
+        responses.clear();
+        winner = null;
+        echo = '';
+      });
+    }
 
     try {
       // Call the real Beguile API
@@ -72,56 +94,91 @@ class _CouncilPageState extends ConsumerState<CouncilPage>
         scenario: _inputController.text.trim(),
       );
 
+      print("✅ Response: $response");
+
       // Process the transcript from API response
       final transcript = response['transcript'] as List? ?? [];
       
+      // Flatten the transcript if it's nested (handle malformed API responses)
+      final flatTranscript = <Map<String, dynamic>>[];
+      for (final item in transcript) {
+        if (item is Map<String, dynamic>) {
+          if (item.containsKey('mentorId')) {
+            // Direct mentor response
+            flatTranscript.add(item);
+          } else if (item.containsKey('transcript') && item['transcript'] is List) {
+            // Nested transcript - flatten it
+            final nested = item['transcript'] as List;
+            for (final nestedItem in nested) {
+              if (nestedItem is Map<String, dynamic> && nestedItem.containsKey('mentorId')) {
+                flatTranscript.add(nestedItem);
+              }
+            }
+          }
+        }
+      }
+      
+      if (mounted) {
+        setState(() {
+          verdicts = flatTranscript;
+        });
+      }
+      
       // Add each mentor response with animation delay
-      for (int i = 0; i < transcript.length; i++) {
+      for (int i = 0; i < flatTranscript.length; i++) {
         await Future.delayed(const Duration(milliseconds: 950));
         
-        final mentorData = transcript[i] as Map<String, dynamic>;
-        final mentorId = mentorData['mentorId'] as String;
-        final mentor = MentorConstants.mentors.firstWhere(
+        final mentorData = flatTranscript[i];
+        final backendMentorId = mentorData['mentorId'] as String? ?? 'casanova';
+        final mentorId = _mapMentorId(backendMentorId);
+        final mentor = _councilMentors.firstWhere(
           (m) => m.id == mentorId,
-          orElse: () => MentorConstants.mentors.first,
+          orElse: () => _councilMentors.first,
         );
         
-        setState(() {
-          responses.add(CouncilResponse(
-            id: '${mentorId}-${DateTime.now().millisecondsSinceEpoch}',
-            mentorId: mentorId,
-            text: mentorData['text'] as String? ?? 'Strategic insight...',
-          ));
-        });
+        if (mounted) {
+          setState(() {
+            responses.add(CouncilResponse(
+              id: '${mentorId}-${DateTime.now().millisecondsSinceEpoch}',
+              mentorId: mentorId,
+              text: mentorData['text'] as String? ?? 'Strategic insight...',
+            ));
+          });
+        }
       }
 
       await Future.delayed(const Duration(milliseconds: 700));
       
       // Set winner from API response
       final winnerData = response['winner'] as Map<String, dynamic>? ?? {};
-      final winnerId = winnerData['id'] as String? ?? 'casanova';
-      final winnerMentor = MentorConstants.mentors.firstWhere(
+      final backendWinnerId = winnerData['id'] as String? ?? 'casanova';
+      final winnerId = _mapMentorId(backendWinnerId);
+      final winnerMentor = _councilMentors.firstWhere(
         (m) => m.id == winnerId,
-        orElse: () => MentorConstants.mentors.first,
+        orElse: () => _councilMentors.first,
       );
       
-      setState(() {
-        winner = winnerMentor;
-        echo = response['echo'] as String? ?? _craftEcho();
-        isPlaying = false;
-      });
-    } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Council failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          winner = winnerMentor;
+          echo = response['echo'] as String? ?? _craftEcho();
+          isPlaying = false;
+        });
       }
-      setState(() {
-        isPlaying = false;
-      });
+
+      if (transcript.isEmpty) {
+        print("⚠️ No council replies returned");
+      } else {
+        print("⚡ Rendering ${transcript.length} responses");
+      }
+    } catch (e) {
+      print("❌ Council API error: $e");
+      if (mounted) {
+        setState(() {
+          isPlaying = false;
+          errorMessage = e.toString();
+        });
+      }
     }
   }
 
@@ -175,7 +232,38 @@ class _CouncilPageState extends ConsumerState<CouncilPage>
       'analysis': 'marcus_aurelius',
     };
     final favoriteId = favorites[selectedMode] ?? 'casanova';
-    return MentorConstants.mentors.firstWhere((m) => m.id == favoriteId);
+    return _councilMentors.firstWhere(
+      (m) => m.id == favoriteId,
+      orElse: () => _councilMentors.first,
+    );
+  }
+
+  // Council-specific mentors (includes Monroe for backend compatibility)
+  static final List<Mentor> _councilMentors = [
+    ...MentorConstants.mentors.where((m) => m.id != 'churchill'), // All except Churchill
+    const Mentor(
+      id: 'monroe',
+      name: 'Marilyn Monroe',
+      subtitle: 'Magnetic Charm',
+      avatar: '🌹',
+      description: 'Control the spotlight—never chase it',
+      color: ['#FF99C8', '#F472B6'], // soft pink to fuchsia
+      greeting: 'Darling, I am Marilyn Monroe. They only see what you show them. Softness can be armor when you choose it. Charm quietly—power doesn\'t need volume.',
+      presets: ['drill', 'advise', 'roleplay', 'chat'],
+    ),
+  ];
+
+  // Map backend mentor IDs to frontend mentor IDs
+  String _mapMentorId(String backendId) {
+    final mapping = {
+      'sun_tzu': 'sun_tzu',
+      'machiavelli': 'machiavelli', 
+      'casanova': 'casanova',
+      'aurelius': 'marcus_aurelius',
+      'cleopatra': 'cleopatra',
+      'monroe': 'monroe', // Keep Monroe for Council tab (backend expects Monroe)
+    };
+    return mapping[backendId] ?? backendId;
   }
 
   String _craftEcho() {
@@ -217,7 +305,10 @@ class _CouncilPageState extends ConsumerState<CouncilPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(),
+                const TabHeader(
+                  title: 'Beguile AI',
+                  subtitle: 'COUNCIL ARENA',
+                ),
                 const SizedBox(height: 24),
                 _buildModeSelector(accent),
                 const SizedBox(height: 20),
@@ -225,7 +316,13 @@ class _CouncilPageState extends ConsumerState<CouncilPage>
                 const SizedBox(height: 20),
                 _buildInputSection(accent),
                 const SizedBox(height: 20),
-                if (responses.isNotEmpty) ...[
+                if (isPlaying) 
+                  const LoadingStateWidget(message: "🔮 Summoning the Council...")
+                else if (errorMessage != null) 
+                  ErrorStateWidget(error: errorMessage!)
+                else if (responses.isEmpty && verdicts.isEmpty) 
+                  const EmptyStateWidget(text: "No responses yet")
+                else if (responses.isNotEmpty) ...[
                   _buildCouncilFeed(),
                   const SizedBox(height: 20),
                 ],
@@ -459,7 +556,7 @@ class _CouncilPageState extends ConsumerState<CouncilPage>
                     ],
                   ),
                   child: ElevatedButton(
-                    onPressed: (_inputController.text.trim().isNotEmpty && !isPlaying) ? _summonCouncil : null,
+                    onPressed: (_hasText && !isPlaying) ? _summonCouncil : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
@@ -498,7 +595,11 @@ class _CouncilPageState extends ConsumerState<CouncilPage>
   Widget _buildCouncilFeed() {
     return Column(
       children: responses.map((response) {
-        final mentor = MentorConstants.mentors.firstWhere((m) => m.id == response.mentorId);
+        final mentorId = _mapMentorId(response.mentorId);
+        final mentor = _councilMentors.firstWhere(
+          (m) => m.id == mentorId,
+          orElse: () => _councilMentors.first, // Safe fallback
+        );
         return _buildMentorResponse(mentor, response);
       }).toList(),
     );
@@ -769,30 +870,47 @@ class _CouncilPageState extends ConsumerState<CouncilPage>
   }
 
   void _copyResponse(Mentor mentor, CouncilResponse response) {
-    // In a real app, you'd use Clipboard.setData here
+    final text = '${mentor.avatar} ${mentor.name}\n"${response.text}"\n\n— Beguile AI Council';
+    Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Copied ${mentor.name}\'s response!')),
+      SnackBar(
+        content: Text('Copied ${mentor.name}\'s response!'),
+        backgroundColor: WFColors.purple400,
+      ),
     );
   }
 
   void _shareResponse() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Screenshot to share this quote.')),
-    );
+    if (responses.isEmpty) return;
+    final allResponses = responses.map((r) {
+      final mentorId = _mapMentorId(r.mentorId);
+      final mentor = _councilMentors.firstWhere(
+        (m) => m.id == mentorId,
+        orElse: () => _councilMentors.first,
+      );
+      return '${mentor.avatar} ${mentor.name}: "${r.text}"';
+    }).join('\n\n');
+    
+    final text = '🧠 Beguile AI Council Debate\n\n$allResponses\n\n— Beguile AI';
+    Share.share(text);
   }
 
   void _copyVerdict() {
     if (winner == null) return;
-    // In a real app, you'd use Clipboard.setData here
+    final text = '🏆 Council Winner: ${winner!.avatar} ${winner!.name}\n\n"$echo"\n\n— Beguile AI Council';
+    Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Copied verdict to clipboard!')),
+      const SnackBar(
+        content: Text('Copied verdict to clipboard!'),
+        backgroundColor: WFColors.purple400,
+      ),
     );
   }
 
   void _shareVerdict() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Screenshot this verdict to share.')),
-    );
+    if (winner == null) return;
+    final text = '🏆 Council Winner: ${winner!.avatar} ${winner!.name}\n\n"$echo"\n\n— Beguile AI Council';
+    Share.share(text);
   }
 }
 

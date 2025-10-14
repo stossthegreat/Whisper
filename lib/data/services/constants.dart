@@ -61,14 +61,14 @@ class MentorConstants {
       presets: ['drill', 'advise', 'roleplay', 'chat'],
     ),
     Mentor(
-      id: 'monroe',
-      name: 'Marilyn Monroe',
-      subtitle: 'Magnetic Charm',
-      avatar: '🌹',
-      description: 'Control the spotlight—never chase it',
-      color: ['#FF99C8', '#F472B6'], // soft pink to fuchsia
+      id: 'churchill',
+      name: 'Winston Churchill',
+      subtitle: 'Resolute Leadership',
+      avatar: '🎖️',
+      description: 'Stand firm against manipulation with unwavering resolve',
+      color: ['#1F2937', '#374151'], // gray-800 to gray-700
       greeting:
-          'Darling, I am Marilyn Monroe. They only see what you show them. Softness can be armor when you choose it. Charm quietly—power doesn\'t need volume.',
+          'I am Winston Churchill. In the darkest hour, resolve is your greatest weapon. Never give in to those who would break your spirit through manipulation.',
       presets: ['drill', 'advise', 'roleplay', 'chat'],
     ),
   ];

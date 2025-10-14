@@ -14,7 +14,7 @@ import '../../atoms/atoms.dart';
 import '../../molecules/molecules.dart';
 import 'scan_output_card.dart';
 import 'pattern_output_card.dart';
-import '../../../widgets/app_header.dart';
+import '../../../widgets/tab_header.dart';
 
 // ===== PROVIDERS =====
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
@@ -104,12 +104,14 @@ class _AnalyzePageState extends ConsumerState<AnalyzePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
+              const TabHeader(
+                title: 'Beguile AI',
+                subtitle: 'ANALYZE',
+              ),
+              const SizedBox(height: WFDims.spacingL),
               Center(
                 child: Column(
                   children: [
-                    Text('ANALYZE', style: WFTextStyles.h1),
-                    const SizedBox(height: WFDims.spacingS),
                     Text(
                       'Scan messages for rigorous analysis',
                       style: WFTextStyles.bodyMedium

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/theme.dart';
+import '../../../widgets/tab_header.dart';
 import '../../atoms/glass_card.dart';
 
 // Vault Entry Model
@@ -82,33 +83,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
-              Row(
-                children: [
-                  const Text(
-                    '🔒',
-                    style: TextStyle(fontSize: 32),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Vault',
-                        style: WFTextStyles.h1.copyWith(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'Your AI message outputs',
-                        style: WFTextStyles.bodyMedium.copyWith(
-                          color: WFColors.textTertiary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              const TabHeader(
+                title: 'Beguile AI',
+                subtitle: 'VAULT',
               ),
               
               const SizedBox(height: 24),

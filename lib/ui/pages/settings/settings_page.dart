@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/theme.dart';
-import '../../../widgets/app_header.dart';
+import '../../../widgets/tab_header.dart';
 import '../../atoms/atoms.dart';
 import '../../../data/providers.dart';
 import '../../../data/providers/auth_providers.dart';
@@ -37,7 +37,12 @@ class SettingsPage extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          const TabHeader(
+            title: 'Beguile AI',
+            subtitle: 'SETTINGS',
+          ),
+          const SizedBox(height: WFDims.spacingL),
+          // Profile section
           Center(
             child: Column(
               children: [
@@ -50,7 +55,7 @@ class SettingsPage extends ConsumerWidget {
                     boxShadow: WFShadows.purpleGlow,
                   ),
                   child: Icon(
-                    Icons.settings,
+                    Icons.person,
                     size: 40,
                     color: WFColors.textPrimary,
                   ),

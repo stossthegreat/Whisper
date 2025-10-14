@@ -6,7 +6,7 @@ import '../../../data/models/mentor_models.dart';
 import '../../../core/theme/theme.dart';
 import '../../atoms/glass_card.dart';
 import 'mentor_detail_page.dart';
-import '../../../widgets/app_header.dart';
+import '../../../widgets/tab_header.dart';
 
 class MentorsPage extends ConsumerStatefulWidget {
   const MentorsPage({super.key});
@@ -60,19 +60,9 @@ class _MentorsContent extends ConsumerWidget {
       padding: const EdgeInsets.all(WFDims.paddingL),
       child: Column(
         children: [
-          // Header
-          Center(
-            child: Column(
-              children: [
-                Text('Choose Your AI Mentor', style: WFTextStyles.h1),
-                const SizedBox(height: WFDims.spacingS),
-                Text(
-                  'Select a legendary defender to guide your training',
-                  style: WFTextStyles.bodyMedium
-                      .copyWith(color: WFColors.textTertiary),
-                ),
-              ],
-            ),
+          const TabHeader(
+            title: 'Beguile AI',
+            subtitle: 'MENTORS',
           ),
 
           const SizedBox(height: WFDims.spacingXXL),
